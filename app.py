@@ -1,55 +1,52 @@
+
 import streamlit as st
-import pandas as pd
-from babel.numbers import format_currency, format_decimal, format_percent
-from babel.dates import format_date, format_time
-from datetime import datetime
+from babel.dates import format_date, format_time, format_datetime
+from babel.numbers import format_decimal, format_currency, format_percent
+from datetime import datetime, date, time
 
-st.title("Quick Locale Tester")
-st.write("Test number, currency, percent, date, and time formats across locales.")
+st.set_page_config(page_title="Quick Locale Tester (FR / DE / JA)", page_icon="🌍", layout="centered")
+st.title("Quick Locale Tester (FR / DE / JA)")
 
-# Default locales
-default_locales = ["fr_FR", "de_DE", "ja_JP"]
-locales = st.multiselect("Select Locales", default_locales, default=default_locales)
+# ---- Inputs ----
+st.subheader("Enter your values")
 
-# Inputs
-number = st.number_input("Number", value=1234567.89)
-currency_code = st.text_input("Currency Code", value="JPY")
-percent_value = st.slider("Percent", 0.0, 1.0, 0.42)
-date_value = datetime.now()
+col1, col2 = st.columns(2)
+with col1:
+    number_input = st.number_input("Number", value=1234567.89, step=0.01, format="%.6f")
+    percent_input = st.number_input("Percent value (0.1234 = 12.34%)", value=0.1234, step=0.0001, format="%.6f")
+with col2:
+    date_input = st.date_input("Date", value=date.today())
+    time_input = st.time_input("Time", value=datetime.now().time())
 
-results = []
-for loc in locales:
-    try:
-        formatted_number = format_decimal(number, locale=loc)
-        formatted_currency = format_currency(number, currency_code, locale=loc)
-        formatted_percent = format_percent(percent_value, locale=loc)
-        formatted_date = format_date(date_value, locale=loc)
-        formatted_time = format_time(date_value, locale=loc)
-        results.append({
-            "Locale": loc,
-            "Number": formatted_number,
-            "Currency": formatted_currency,
-            "Percent": formatted_percent,
-            "Date": formatted_date,
-            "Time": formatted_time
-        })
-    except Exception as e:
-        results.append({
-            "Locale": loc,
-            "Number": str(e),
-            "Currency": str(e),
-            "Percent": str(e),
-            "Date": str(e),
-            "Time": str(e)
-        })
+currency_amount = st.number_input("Currency amount", value=246.88, step=0.01, format="%.2f")
+currency_code = st.text_input("Currency code (e.g., EUR, JPY, USD)", value="EUR")
 
-df = pd.DataFrame(results)
-st.dataframe(df)
+locale_choice = st.selectbox("Select Locale", ["fr_FR", "de_DE", "ja_JP"], index=0)
 
-st.markdown("### Notes")
-st.markdown("""
-- **fr_FR**: Uses space as thousands separator, comma as decimal, € after amount.
-- **de_DE**: Uses period as thousands separator, comma as decimal, € before amount.
-- **ja_JP**: Uses comma as thousands separator, period as decimal, yen (￥) before amount. 
-  Dates can be `yyyy/MM/dd` or `yyyy年M月d日`. Time often uses 24h or 午前/午後.
-""")
+# ---- Output ----
+st.subheader(f"Results for {locale_choice}")
+
+# Date/time formatting
+dt = datetime.combine(date_input, time_input)
+st.write("**Date & time formats:**")
+st.write("Short date:", format_date(date_input, format="short", locale=locale_choice))
+st.write("Long date:", format_date(date_input, format="long", locale=locale_choice))
+st.write("Short time:", format_time(time_input, format="short", locale=locale_choice))
+st.write("Medium datetime:", format_datetime(dt, format="medium", locale=locale_choice))
+
+# Number/percent formatting
+st.write("**Number formats:**")
+st.write("Decimal:", format_decimal(number_input, locale=locale_choice))
+st.write("Percent:", format_percent(percent_input, locale=locale_choice))
+
+# Currency formatting
+st.write("**Currency formats:**")
+st.write(f"{currency_code}:", format_currency(currency_amount, currency_code, locale=locale_choice))
+
+# Style guide notes
+if locale_choice == "fr_FR":
+    st.info("**French (fr_FR)**: dd/MM/yyyy; 24h time; space as thousands; comma as decimal; € after amount with a space (e.g., 1 234,56 €).")
+elif locale_choice == "de_DE":
+    st.info("**German (de_DE)**: d.M.yyyy; 24h time; period as thousands; comma as decimal; € after amount with a space (e.g., 1.234,56 €).")
+else:
+    st.info("**Japanese (ja_JP)**: yyyy/MM/dd or yyyy年M月d日; 24h time or 午前/午後; thousands ',' and decimal '.'; Yen shown as ￥ or 円 (try currency JPY).")
